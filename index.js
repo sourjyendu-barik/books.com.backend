@@ -121,9 +121,8 @@ app.get("/api/categories", async (req, res) => {
 //   }
 // });
 
-const Port = 3000;
-const startServer = async () => {
+(async () => {
   await initializeDb();
-  app.listen(Port, () => console.log("The server is running on port:", Port));
-};
-startServer();
+})();
+
+module.exports = app;
