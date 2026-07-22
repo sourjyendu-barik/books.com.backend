@@ -2,11 +2,18 @@ const { initializeDb } = require("./db/db.connect");
 const bookList = require("./modal/modal.books");
 const express = require("express");
 const cookieParser = require("cookie-parser");
-const app = express();
 const dotenv = require("dotenv");
+const app = express();
+const cors = require("cors");
 dotenv.config();
-app.use(express.json());
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "https://books-com.vercel.app"],
+    credentials: true,
+  }),
+);
 app.use(cookieParser());
+app.use(express.json());
 //seeding data code(no express required)
 // const fs = require("fs");
 // const jsonData = fs.readFileSync("data.json", "utf-8");
@@ -22,14 +29,8 @@ app.use(cookieParser());
 //   }
 // };
 // seedData();
-const cors = require("cors");
-const corsOptions = {
-  origin: ["http://localhost:5173", "https://books-com.vercel.app"],
-  credentials: true,
-  optionSuccessStatus: 200,
-};
 
-app.use(cors(corsOptions));
+// app.use(cors(corsOptions));
 
 app.use("/auth", require("./router/authRoutes"));
 
