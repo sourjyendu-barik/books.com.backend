@@ -3,6 +3,8 @@ const bookList = require("./modal/modal.books");
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const app = express();
+const dotenv = require("dotenv");
+dotenv.config();
 app.use(express.json());
 app.use(cookieParser());
 //seeding data code(no express required)
@@ -33,6 +35,7 @@ app.use("/auth", require("./router/authRoutes"));
 
 //middilewire
 const auth = require("./middilewire/auth");
+const { configDotenv } = require("dotenv");
 app.use(auth);
 
 //protected routes
@@ -135,12 +138,14 @@ app.get("/api/categories", async (req, res) => {
 //   await initializeDb();
 // })();
 const port = 4000;
-app.listen(port, async () => {
+const startServer = async () => {
   try {
     await initializeDb();
-    console.log("Server is started with port", port);
+    app.listen(port, () => {
+      console.log("Server is running on port", port);
+    });
   } catch (error) {
     console.error(error);
   }
-});
-module.exports = app;
+};
+startServer();
