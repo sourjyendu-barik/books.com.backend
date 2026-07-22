@@ -23,13 +23,13 @@ const myData = async (req, res) => {
 const logout = (req, res) => {
   //for localhost
 
-  // res.clearCookie("access_token", {
+  // res.clearCookie("access_token_books", {
   //   httpOnly: true,
   // });
 
   //for production
 
-  res.clearCookie("access_token", {
+  res.clearCookie("access_token_books", {
     httpOnly: true,
     secure: true,
     sameSite: "None",

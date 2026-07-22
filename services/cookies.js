@@ -11,7 +11,7 @@
 //for production?
 
 function setSecureCookie(res, token) {
-  res.cookie("access_token", token, {
+  res.cookie("access_token_books", token, {
     httpOnly: true,
     secure: true, // Required over HTTPS
     sameSite: "None", // Required for cross-site cookies
