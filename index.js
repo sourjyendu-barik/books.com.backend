@@ -3,44 +3,65 @@ const bookList = require("./modal/modal.books");
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const dotenv = require("dotenv");
-const app = express();
 const cors = require("cors");
+
 dotenv.config();
+const app = express();
+
+// 1. Disable ETag caching so Express never sends 304 Not Modified (which strips CORS headers on Vercel)
+app.disable("etag");
+
+// 2. Disable response caching for API routes
+app.use((req, res, next) => {
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
+  next();
+});
+
+// 3. Dynamic CORS Configuration
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://books-com.vercel.app",
+];
+
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://books-com.vercel.app"],
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, origin || true);
+      } else {
+        callback(null, false);
+      }
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
+
 app.use(cookieParser());
 app.use(express.json());
-//seeding data code(no express required)
-// const fs = require("fs");
-// const jsonData = fs.readFileSync("data.json", "utf-8");
-// const booksData = JSON.parse(jsonData);
 
-// const seedData = async () => {
-//   try {
-//     await initializeDb();
-//     await bookList.insertMany(booksData);
-//     console.log("Data seeded successfully.");
-//   } catch (error) {
-//     console.log("Error while seding data", error);
-//   }
-// };
-// seedData();
+// 4. Ensure DB connection on Vercel Serverless Function invocations
+app.use(async (req, res, next) => {
+  try {
+    await initializeDb();
+    next();
+  } catch (error) {
+    console.error("DB connection error:", error);
+    res.status(500).json({ message: "Database connection failed", error });
+  }
+});
 
-// app.use(cors(corsOptions));
-
+// Public auth routes (Google callback)
 app.use("/auth", require("./router/authRoutes"));
 
-//middilewire
+// Protected Middleware
 const auth = require("./middilewire/auth");
-const { configDotenv } = require("dotenv");
 app.use(auth);
 
-//protected routes
+// Protected routes
 app.use("/auth", require("./router/userDetails"));
+
 const findAllBooks = async () => {
   try {
     const allBooks = await bookList.find();
@@ -49,6 +70,7 @@ const findAllBooks = async () => {
     throw error;
   }
 };
+
 app.get("/api/products", async (req, res) => {
   try {
     const allBooksData = await findAllBooks();
@@ -72,6 +94,7 @@ const findBookById = async (book_id) => {
     throw error;
   }
 };
+
 app.get("/api/products/:productId", async (req, res) => {
   try {
     const book = await findBookById(req.params.productId);
@@ -83,7 +106,7 @@ app.get("/api/products/:productId", async (req, res) => {
   } catch (error) {
     res
       .status(400)
-      .json({ message: "Error while fetching  books data by id.", error });
+      .json({ message: "Error while fetching books data by id.", error });
   }
 });
 
@@ -95,6 +118,7 @@ const findCategoryList = async () => {
     throw error;
   }
 };
+
 app.get("/api/categories", async (req, res) => {
   try {
     const categoryList = await findCategoryList();
@@ -105,7 +129,7 @@ app.get("/api/categories", async (req, res) => {
         },
       });
     } else {
-      res.status(404).json({ message: "Data bot found" });
+      res.status(404).json({ message: "Data not found" });
     }
   } catch (error) {
     res
@@ -114,39 +138,12 @@ app.get("/api/categories", async (req, res) => {
   }
 });
 
-// const findProductByCategory = async (categoryName) => {
-//   try {
-//     const products = await bookList.find({ category: categoryName });
-//     return products;
-//   } catch (error) {
-//     throw error;
-//   }
-// };
+const port = process.env.PORT || 4000;
+if (process.env.NODE_ENV !== "production") {
+  app.listen(port, () => {
+    console.log("Server is running on port", port);
+  });
+}
 
-// app.get("/api/categories/:categoryId", async (req, res) => {
-//   try {
-//     const books = await findProductByCategory(req.params.categoryId);
-//     if (books.length > 0) {
-//         res.status(200).json({})
-//     } else {
-//     }
-//   } catch (error) {
-//     res.status(400).json({ message: "Error while fetching products.", error });
-//   }
-// });
-
-// (async () => {
-//   await initializeDb();
-// })();
-const port = 4000;
-const startServer = async () => {
-  try {
-    await initializeDb();
-    app.listen(port, () => {
-      console.log("Server is running on port", port);
-    });
-  } catch (error) {
-    console.error(error);
-  }
-};
-startServer();
+// 5. Export Express app for Vercel Serverless deployment
+module.exports = app;

@@ -84,6 +84,7 @@ const googleDetails = async (req, res) => {
     setSecureCookie(res, token);
     res.status(200).json({
       success: true,
+      token,
       user: {
         id: user._id,
         name: user.name,
