@@ -1,8 +1,10 @@
 const { initializeDb } = require("./db/db.connect");
 const bookList = require("./modal/modal.books");
 const express = require("express");
+const cookieParser = require("cookie-parser");
 const app = express();
 app.use(express.json());
+app.use(cookieParser());
 //seeding data code(no express required)
 // const fs = require("fs");
 // const jsonData = fs.readFileSync("data.json", "utf-8");
@@ -20,13 +22,21 @@ app.use(express.json());
 // seedData();
 const cors = require("cors");
 const corsOptions = {
-  origin: "*",
+  origin: ["http://localhost:5173", "https://books-com.vercel.app"],
   credentials: true,
   optionSuccessStatus: 200,
 };
 
 app.use(cors(corsOptions));
 
+app.use("/auth", require("./router/authRoutes"));
+
+//middilewire
+const auth = require("./middilewire/auth");
+app.use(auth);
+
+//protected routes
+app.use("/auth", require("./router/userDetails"));
 const findAllBooks = async () => {
   try {
     const allBooks = await bookList.find();
@@ -121,8 +131,16 @@ app.get("/api/categories", async (req, res) => {
 //   }
 // });
 
-(async () => {
-  await initializeDb();
-})();
-
+// (async () => {
+//   await initializeDb();
+// })();
+const port = 4000;
+app.listen(port, async () => {
+  try {
+    await initializeDb();
+    console.log("Server is started with port", port);
+  } catch (error) {
+    console.error(error);
+  }
+});
 module.exports = app;
